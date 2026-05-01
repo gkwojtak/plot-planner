@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ChevronDown, ChevronUp, X, Plus } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import { ChevronDown, ChevronUp, X, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useProject,
@@ -9,6 +10,12 @@ import {
   type RoadEdge,
   type Vec2,
 } from "@/lib/store/project";
+import { importPlotByUldkId } from "@/lib/projects/import-action";
+
+const MapPreview = dynamic(
+  () => import("./MapPreview").then((m) => m.MapPreview),
+  { ssr: false },
+);
 
 const ROAD_EDGES: { value: RoadEdge; label: string }[] = [
   { value: "north", label: "Północ" },
@@ -60,11 +67,57 @@ export function PlotEditor() {
   const addPlotPoint = useProject((s) => s.addPlotPoint);
   const removePlotPoint = useProject((s) => s.removePlotPoint);
 
+  const uldkId = useProject((s) => s.plot.uldkId);
+  const locationWgs84 = useProject((s) => s.plot.locationWgs84);
+  const setPlotFromImport = useProject((s) => s.setPlotFromImport);
+
   const nameRef = useRef<HTMLInputElement>(null);
+  const uldkInputRef = useRef<HTMLInputElement>(null);
+  const [uldkError, setUldkError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   function commitName() {
     const val = nameRef.current?.value.trim();
     if (val) setProjectName(val);
+  }
+
+  function handleImport() {
+    const id = uldkInputRef.current?.value.trim();
+    if (!id) return;
+    setUldkError(null);
+    startTransition(async () => {
+      const result = await importPlotByUldkId(id);
+      if (!result.ok) {
+        if (result.error === "not_found") {
+          setUldkError("Nie znaleziono działki o podanym ID. Sprawdź numer TERYT.");
+        } else if (result.error === "network") {
+          setUldkError("Nie udało się pobrać działki — sprawdź połączenie z internetem.");
+        } else {
+          setUldkError("Nie udało się odczytać kształtu działki. Spróbuj ponownie.");
+        }
+        return;
+      }
+      setPlotFromImport({
+        points: result.points,
+        locationWgs84: result.locationWgs84,
+        polygonWgs84: result.polygonWgs84,
+        uldkId: id,
+        areaM2: result.areaM2,
+      });
+    });
+  }
+
+  function handleClearImport() {
+    useProject.setState((s) => ({
+      plot: {
+        ...s.plot,
+        locationWgs84: null,
+        uldkId: null,
+        polygonWgs84: null,
+      },
+    }));
+    if (uldkInputRef.current) uldkInputRef.current.value = "";
+    setUldkError(null);
   }
 
   return (
@@ -119,6 +172,72 @@ export function PlotEditor() {
         </div>
       </div>
 
+      {/* Import z Geoportalu */}
+      <div className="mt-4 border-t border-border pt-4">
+        <div className="mb-1 text-xs font-medium uppercase tracking-wide text-fg-muted">
+          IMPORT Z MAPY
+        </div>
+        <p className="mb-3 text-xs text-fg-muted">
+          Wpisz ID działki z Geoportalu (TERYT)
+        </p>
+
+        {locationWgs84 ? (
+          <div className="flex items-center justify-between rounded-lg bg-surface-2 border border-border px-3 py-2">
+            <div className="min-w-0">
+              <p className="text-xs font-mono font-medium text-fg truncate">{uldkId}</p>
+              <p className="text-[11px] text-fg-muted tabular-nums">
+                {locationWgs84.lat.toFixed(5)}°N, {locationWgs84.lon.toFixed(5)}°E
+              </p>
+            </div>
+            <button
+              onClick={handleClearImport}
+              className="ml-3 shrink-0 text-xs text-fg-muted hover:text-fg transition-colors"
+            >
+              Wyczyść
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2">
+              <input
+                ref={uldkInputRef}
+                type="text"
+                placeholder="np. 141201_1.0001.123"
+                defaultValue={uldkId ?? ""}
+                onKeyDown={(e) => { if (e.key === "Enter") handleImport(); }}
+                className={cn(
+                  "min-w-0 flex-1 rounded-lg border border-border bg-surface-2",
+                  "px-3 py-1.5 font-mono text-xs text-fg outline-none",
+                  "focus:ring-1 focus:ring-inset focus:ring-accent placeholder:text-fg-muted/50",
+                )}
+              />
+              <button
+                onClick={handleImport}
+                disabled={isPending}
+                className={cn(
+                  "shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5",
+                  "bg-accent text-white text-xs font-medium transition-colors",
+                  "hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed",
+                )}
+              >
+                {isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                Importuj
+              </button>
+            </div>
+            {uldkError && (
+              <p className="mt-2 text-xs text-[#C25A4A]">{uldkError}</p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Podgląd mapy */}
+      <div className="mt-4 border-t border-border pt-4">
+        <MapPreview />
+      </div>
+
       {plotKind === "rectangle" ? (
         <>
           {/* Wymiary — rectangle only */}
@@ -126,7 +245,7 @@ export function PlotEditor() {
             <div className="mb-3 text-xs font-medium uppercase tracking-wide text-fg-muted">
               Wymiary
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3">
               <DimStepper
                 label="Szerokość"
                 value={width}

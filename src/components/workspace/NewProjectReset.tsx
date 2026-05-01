@@ -30,6 +30,9 @@ export function NewProjectReset() {
         points: rectanglePoints(DEFAULT_WIDTH, DEFAULT_DEPTH),
         roadEdge: "south",
         northRotationDeg: 0,
+        locationWgs84: null,
+        uldkId: null,
+        polygonWgs84: null,
       },
       selectedHouseId: "system-mala-kostka",
       scenarios: {

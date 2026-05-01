@@ -11,6 +11,8 @@ export type ScenarioLetter = "A" | "B" | "C";
 
 export const SCENARIO_LETTERS: ScenarioLetter[] = ["A", "B", "C"];
 
+export type LatLon = { lat: number; lon: number };
+
 export type PlotState = {
   kind: PlotKind;
   widthM: number;
@@ -18,6 +20,9 @@ export type PlotState = {
   points: Vec2[];
   roadEdge: RoadEdge;
   northRotationDeg: number;
+  locationWgs84?: LatLon | null;
+  uldkId?: string | null;
+  polygonWgs84?: LatLon[] | null;
 };
 
 export type PlacementState = {
@@ -56,6 +61,13 @@ export type ProjectStore = {
   movePlotPoint: (index: number, point: Vec2) => void;
   addPlotPoint: () => void;
   removePlotPoint: (index: number) => void;
+  setPlotFromImport: (payload: {
+    points: Vec2[];
+    locationWgs84: LatLon;
+    polygonWgs84: LatLon[];
+    uldkId: string;
+    areaM2: number;
+  }) => void;
 };
 
 const rectanglePoints = (w: number, d: number): Vec2[] => [
@@ -186,6 +198,25 @@ export const useProject = create<ProjectStore>((set) => ({
       if (s.plot.points.length <= 3) return s;
       const pts = s.plot.points.filter((_, i) => i !== index);
       return { plot: { ...s.plot, points: pts } };
+    }),
+
+  setPlotFromImport: (payload) =>
+    set((s) => {
+      const bbox = pointsBBox(payload.points);
+      const widthM = Math.max(5, Math.round((bbox.maxX - bbox.minX) * 2) / 2);
+      const depthM = Math.max(5, Math.round((bbox.maxY - bbox.minY) * 2) / 2);
+      return {
+        plot: {
+          ...s.plot,
+          kind: "polygon" as PlotKind,
+          points: payload.points,
+          widthM,
+          depthM,
+          locationWgs84: payload.locationWgs84,
+          polygonWgs84: payload.polygonWgs84,
+          uldkId: payload.uldkId,
+        },
+      };
     }),
 }));
 
