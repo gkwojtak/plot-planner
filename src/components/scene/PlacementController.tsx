@@ -103,6 +103,7 @@ export function PlacementController({ house, plotWidth, plotDepth }: Props) {
           width={house.widthM}
           depth={house.depthM}
           height={house.heightM}
+          modelUrl={house.modelUrl}
         />
       </group>
 

@@ -2,13 +2,11 @@
 
 import { RotateCcw, RotateCw, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useProject } from "@/lib/store/project";
-
-const variants = [
-  { id: "A", label: "Wariant A", active: true },
-  { id: "B", label: "Wariant B", active: false },
-  { id: "C", label: "Wariant C", active: false },
-];
+import {
+  useProject,
+  SCENARIO_LETTERS,
+  type ScenarioLetter,
+} from "@/lib/store/project";
 
 const ROTATE_STEP = 15;
 
@@ -16,6 +14,8 @@ export function BottomBar() {
   const placement = useProject((s) => s.placement);
   const setPlacement = useProject((s) => s.setPlacement);
   const step = useProject((s) => s.step);
+  const currentScenario = useProject((s) => s.currentScenario);
+  const switchScenario = useProject((s) => s.switchScenario);
   const isPlacing = step === "place";
 
   function rotate(deltaDeg: number) {
@@ -27,17 +27,13 @@ export function BottomBar() {
     <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-20 flex justify-center px-4">
       <div className="pointer-events-auto flex items-center gap-2 rounded-chip border border-border bg-surface px-2 py-2 shadow-panel">
         <div className="flex items-center gap-1 pr-2">
-          {variants.map((v) => (
-            <button
-              key={v.id}
-              className={
-                v.active
-                  ? "rounded-chip bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground"
-                  : "rounded-chip px-3 py-1.5 text-xs font-medium text-fg-muted hover:text-fg hover:bg-surface-2"
-              }
-            >
-              {v.id}
-            </button>
+          {SCENARIO_LETTERS.map((letter) => (
+            <ScenarioButton
+              key={letter}
+              letter={letter}
+              active={currentScenario === letter}
+              onClick={() => switchScenario(letter)}
+            />
           ))}
         </div>
 
@@ -74,6 +70,31 @@ export function BottomBar() {
         <ToolButton icon={<Undo2 className="h-4 w-4" />} label="Cofnij" />
       </div>
     </div>
+  );
+}
+
+function ScenarioButton({
+  letter,
+  active,
+  onClick,
+}: {
+  letter: ScenarioLetter;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={`Wariant ${letter}`}
+      className={cn(
+        "rounded-chip px-3 py-1.5 text-xs font-medium transition-colors",
+        active
+          ? "bg-accent text-accent-foreground"
+          : "text-fg-muted hover:text-fg hover:bg-surface-2",
+      )}
+    >
+      {letter}
+    </button>
   );
 }
 

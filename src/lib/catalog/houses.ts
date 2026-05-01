@@ -24,7 +24,9 @@ export const HOUSE_CATALOG: HouseDesign[] = [
     depthM: 10,
     heightM: 6,
     floors: 1,
-    modelUrl: null,
+    // Kenney "Modular Buildings" pack — building-sample-house-a.glb
+    // License: CC0 (Creative Commons Zero 1.0) — https://kenney.nl/assets/modular-buildings
+    modelUrl: "/models/house-cottage.glb",
     blurb: "Parterowy dom kompaktowy, 80 m².",
   },
   {
@@ -34,7 +36,9 @@ export const HOUSE_CATALOG: HouseDesign[] = [
     depthM: 14,
     heightM: 7,
     floors: 1,
-    modelUrl: null,
+    // Kenney "Modular Buildings" pack — building-sample-house-b.glb
+    // License: CC0 (Creative Commons Zero 1.0) — https://kenney.nl/assets/modular-buildings
+    modelUrl: "/models/house-barn.glb",
     blurb: "Wydłużony rzut z dwuspadowym dachem, 140 m².",
   },
   {

@@ -6,8 +6,7 @@ import type { LoadedProject } from "@/lib/projects/queries";
 
 /**
  * Sets the Zustand store from server-loaded project data exactly once,
- * before the user sees the page. Re-runs when `project.id` changes
- * (i.e. user navigates between projects without remount of the workspace).
+ * before the user sees the page.
  */
 export function ProjectHydrator({ project }: { project: LoadedProject }) {
   const lastId = useRef<string | null>(null);
@@ -30,10 +29,9 @@ export function ProjectHydrator({ project }: { project: LoadedProject }) {
         northRotationDeg: project.plot.northRotationDeg,
       },
       selectedHouseId: project.selectedHouseSlug,
-      placement: {
-        position: { x: project.placement.x, y: project.placement.y },
-        rotationDeg: project.placement.rotationDeg,
-      },
+      scenarios: project.scenarios,
+      currentScenario: "A",
+      placement: project.scenarios.A,
     });
   }, [project]);
 

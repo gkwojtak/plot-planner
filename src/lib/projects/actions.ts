@@ -2,16 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { PlotState } from "@/lib/store/project";
+import type {
+  PlotState,
+  PlacementState,
+  ScenarioLetter,
+} from "@/lib/store/project";
+import { SCENARIO_LETTERS } from "@/lib/store/project";
 
 export type SaveProjectInput = {
-  /** null = new project; otherwise update existing. */
   id: string | null;
   name: string;
   plot: PlotState;
   selectedHouseId: string | null;
-  /** Procedural placement of the house in scene coords (meters). */
-  placement: { x: number; y: number; rotationDeg: number };
+  scenarios: Record<ScenarioLetter, PlacementState>;
 };
 
 export type SaveProjectResult =
@@ -19,7 +22,7 @@ export type SaveProjectResult =
   | { ok: false; error: "not_authenticated" | "db_error"; message?: string };
 
 /**
- * Upsert a project + its plot + scenario(A) + placement.
+ * Upsert a project + its plot + 3 scenarios + their placements.
  * Returns the project id (existing or newly created).
  */
 export async function saveProject(
@@ -74,30 +77,42 @@ export async function saveProject(
   if (plotErr)
     return { ok: false, error: "db_error", message: plotErr.message };
 
-  // 3) scenario A + placement (only if a house is selected)
+  // 3) scenarios A/B/C + placements (only if a house is selected)
   if (input.selectedHouseId) {
     const houseDb = await resolveHouseDesignId(supabase, input.selectedHouseId);
     if (houseDb) {
-      const { data: scenario, error: scErr } = await supabase
+      // Upsert all 3 scenarios in one round trip
+      const { data: scenarioRows, error: scErr } = await supabase
         .from("scenarios")
         .upsert(
-          { project_id: projectId, name: "A", position: 0 },
-          { onConflict: "project_id,name", ignoreDuplicates: false },
+          SCENARIO_LETTERS.map((letter, idx) => ({
+            project_id: projectId,
+            name: letter,
+            position: idx,
+          })),
+          { onConflict: "project_id,name" },
         )
-        .select("id")
-        .single();
+        .select("id, name");
 
-      if (!scErr && scenario) {
-        await supabase.from("placements").upsert(
-          {
-            scenario_id: scenario.id,
-            house_design_id: houseDb,
-            position_x: input.placement.x,
-            position_y: input.placement.y,
-            rotation_deg: input.placement.rotationDeg,
-          },
-          { onConflict: "scenario_id" },
-        );
+      if (!scErr && scenarioRows) {
+        const placementRows = scenarioRows
+          .map((sc) => {
+            const letter = sc.name as ScenarioLetter;
+            const p = input.scenarios[letter];
+            if (!p) return null;
+            return {
+              scenario_id: sc.id,
+              house_design_id: houseDb,
+              position_x: p.position.x,
+              position_y: p.position.y,
+              rotation_deg: p.rotationDeg,
+            };
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null);
+
+        await supabase
+          .from("placements")
+          .upsert(placementRows, { onConflict: "scenario_id" });
       }
     }
   }

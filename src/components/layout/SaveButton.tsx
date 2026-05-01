@@ -31,11 +31,7 @@ export function SaveButton({ isAuthenticated }: { isAuthenticated: boolean }) {
       name: state.meta.name,
       plot: state.plot,
       selectedHouseId: state.selectedHouseId,
-      placement: {
-        x: state.placement.position.x,
-        y: state.placement.position.y,
-        rotationDeg: state.placement.rotationDeg,
-      },
+      scenarios: state.scenarios,
     });
 
     if (result.ok) {

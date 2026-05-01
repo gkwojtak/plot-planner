@@ -7,36 +7,36 @@ export type Vec2 = { x: number; y: number };
 export type PlotKind = "rectangle" | "polygon";
 export type RoadEdge = "north" | "south" | "east" | "west";
 export type WorkflowStep = "plot" | "house" | "place" | "analyze" | "share";
+export type ScenarioLetter = "A" | "B" | "C";
+
+export const SCENARIO_LETTERS: ScenarioLetter[] = ["A", "B", "C"];
 
 export type PlotState = {
   kind: PlotKind;
   widthM: number;
   depthM: number;
-  /**
-   * Source of truth for geometry. For rectangle, derived from width/depth.
-   * For polygon (Sprint 5), this is the editable point list.
-   */
   points: Vec2[];
   roadEdge: RoadEdge;
   northRotationDeg: number;
 };
 
 export type PlacementState = {
-  /** Position of house center on the plot, in meters from plot origin. */
   position: Vec2;
   rotationDeg: number;
 };
 
 export type ProjectMeta = {
-  id: string | null; // null until first save
+  id: string | null;
   name: string;
 };
 
 export type ProjectStore = {
   meta: ProjectMeta;
   plot: PlotState;
-  /** id of the catalog house design currently picked, or null. */
   selectedHouseId: string | null;
+  scenarios: Record<ScenarioLetter, PlacementState>;
+  currentScenario: ScenarioLetter;
+  /** Active placement = mirror of scenarios[currentScenario] for fast scene reads. */
   placement: PlacementState;
   step: WorkflowStep;
 
@@ -46,6 +46,7 @@ export type ProjectStore = {
   setNorthRotation: (deg: number) => void;
   selectHouse: (id: string | null) => void;
   setPlacement: (placement: Partial<PlacementState>) => void;
+  switchScenario: (letter: ScenarioLetter) => void;
   setStep: (step: WorkflowStep) => void;
 };
 
@@ -70,11 +71,19 @@ const initialPlacement: PlacementState = {
   rotationDeg: 0,
 };
 
+const initialScenarios: Record<ScenarioLetter, PlacementState> = {
+  A: { ...initialPlacement, position: { ...initialPlacement.position } },
+  B: { ...initialPlacement, position: { ...initialPlacement.position } },
+  C: { ...initialPlacement, position: { ...initialPlacement.position } },
+};
+
 export const useProject = create<ProjectStore>((set) => ({
   meta: { id: null, name: "Mój nowy projekt" },
   plot: initialPlot,
   selectedHouseId: "system-mala-kostka",
-  placement: initialPlacement,
+  scenarios: initialScenarios,
+  currentScenario: "A",
+  placement: initialScenarios.A,
   step: "plot",
 
   setProjectName: (name) => set((s) => ({ meta: { ...s.meta, name } })),
@@ -97,12 +106,27 @@ export const useProject = create<ProjectStore>((set) => ({
   selectHouse: (id) => set({ selectedHouseId: id }),
 
   setPlacement: (patch) =>
-    set((s) => ({ placement: { ...s.placement, ...patch } })),
+    set((s) => {
+      const next: PlacementState = {
+        position: patch.position ?? s.placement.position,
+        rotationDeg: patch.rotationDeg ?? s.placement.rotationDeg,
+      };
+      return {
+        placement: next,
+        scenarios: { ...s.scenarios, [s.currentScenario]: next },
+      };
+    }),
+
+  switchScenario: (letter) =>
+    set((s) => ({
+      currentScenario: letter,
+      placement: s.scenarios[letter],
+    })),
 
   setStep: (step) => set({ step }),
 }));
 
-// Selectors — keep React renders narrow.
+// Selectors
 export const selectPlotArea = (s: ProjectStore) => {
   if (s.plot.kind === "rectangle") return s.plot.widthM * s.plot.depthM;
   const pts = s.plot.points;

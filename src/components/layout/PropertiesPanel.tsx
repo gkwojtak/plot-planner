@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useProject } from "@/lib/store/project";
 import { PlotEditor } from "./PlotEditor";
 import { HouseCatalog } from "./HouseCatalog";
+import { AnalysisPanel } from "./AnalysisPanel";
 
 export function PropertiesPanel({ className }: { className?: string }) {
   const step = useProject((s) => s.step);
@@ -18,7 +19,7 @@ export function PropertiesPanel({ className }: { className?: string }) {
       {step === "plot" && <PlotEditor />}
       {step === "house" && <HouseCatalog />}
       {step === "place" && <PlacementHint />}
-      {step === "analyze" && <Placeholder title="ANALIZA" hint="Reguły 3 m / 4 m i strefy zakazane — Sprint 4." />}
+      {step === "analyze" && <AnalysisPanel />}
       {step === "share" && <Placeholder title="UDOSTĘPNIJ" hint="Publiczny link, komentarze, PDF — Sprint 6." />}
     </aside>
   );

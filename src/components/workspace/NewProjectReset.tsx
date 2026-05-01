@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useProject } from "@/lib/store/project";
+import { useProject, type PlacementState } from "@/lib/store/project";
 
 const DEFAULT_WIDTH = 20;
 const DEFAULT_DEPTH = 35;
@@ -13,11 +13,11 @@ const rectanglePoints = (w: number, d: number) => [
   { x: -w / 2, y: d / 2 },
 ];
 
-/**
- * Resets the store to a fresh new-project state on `/`.
- * Without this, navigating from `/projects/[id]` to `/` would leave the loaded
- * project's id in the store — Zapisz would silently update the wrong project.
- */
+const defaultPlacement: PlacementState = {
+  position: { x: 0, y: -4 },
+  rotationDeg: 0,
+};
+
 export function NewProjectReset() {
   useEffect(() => {
     if (useProject.getState().meta.id === null) return;
@@ -32,7 +32,13 @@ export function NewProjectReset() {
         northRotationDeg: 0,
       },
       selectedHouseId: "system-mala-kostka",
-      placement: { position: { x: 0, y: -4 }, rotationDeg: 0 },
+      scenarios: {
+        A: { ...defaultPlacement, position: { ...defaultPlacement.position } },
+        B: { ...defaultPlacement, position: { ...defaultPlacement.position } },
+        C: { ...defaultPlacement, position: { ...defaultPlacement.position } },
+      },
+      currentScenario: "A",
+      placement: defaultPlacement,
       step: "plot",
     });
   }, []);

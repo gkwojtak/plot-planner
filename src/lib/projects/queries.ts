@@ -1,6 +1,12 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Vec2, RoadEdge, PlotKind } from "@/lib/store/project";
+import type {
+  Vec2,
+  RoadEdge,
+  PlotKind,
+  ScenarioLetter,
+  PlacementState,
+} from "@/lib/store/project";
 
 export type LoadedProject = {
   id: string;
@@ -14,11 +20,16 @@ export type LoadedProject = {
     northRotationDeg: number;
   };
   selectedHouseSlug: string | null;
-  placement: { x: number; y: number; rotationDeg: number };
+  scenarios: Record<ScenarioLetter, PlacementState>;
+};
+
+const DEFAULT_PLACEMENT: PlacementState = {
+  position: { x: 0, y: -4 },
+  rotationDeg: 0,
 };
 
 /**
- * Load a single project + its plot + first scenario's placement.
+ * Load a single project + its plot + all scenarios with placements.
  * RLS guarantees the caller can only read their own projects.
  * Returns null if not found / not authorised.
  */
@@ -38,11 +49,11 @@ export async function loadProject(id: string): Promise<LoadedProject | null> {
     .eq("project_id", id)
     .maybeSingle();
 
-  // First scenario (A) + its placement + the underlying house design slug.
-  const { data: scenario } = await supabase
+  // All scenarios + their placements + the underlying house design slug
+  const { data: scenarioRows } = await supabase
     .from("scenarios")
     .select(
-      `id,
+      `name,
        placements (
          position_x,
          position_y,
@@ -51,17 +62,42 @@ export async function loadProject(id: string): Promise<LoadedProject | null> {
        )`,
     )
     .eq("project_id", id)
-    .order("position", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order("position", { ascending: true });
 
   type PlacementRow = {
     position_x: number;
     position_y: number;
     rotation_deg: number;
-    house_designs: { catalog_slug: string | null } | null;
+    // PostgREST returns the joined row as an array even for a FK 1:1.
+    house_designs: { catalog_slug: string | null }[] | null;
   };
-  const placementRow = scenario?.placements?.[0] as PlacementRow | undefined;
+  type ScenarioRow = { name: string; placements: PlacementRow[] };
+
+  const rows = (scenarioRows ?? []) as unknown as ScenarioRow[];
+
+  const scenarios: Record<ScenarioLetter, PlacementState> = {
+    A: { ...DEFAULT_PLACEMENT, position: { ...DEFAULT_PLACEMENT.position } },
+    B: { ...DEFAULT_PLACEMENT, position: { ...DEFAULT_PLACEMENT.position } },
+    C: { ...DEFAULT_PLACEMENT, position: { ...DEFAULT_PLACEMENT.position } },
+  };
+
+  let selectedSlug: string | null = null;
+
+  for (const row of rows) {
+    const letter = row.name as ScenarioLetter;
+    if (!(letter in scenarios)) continue;
+    const placement = row.placements?.[0];
+    if (placement) {
+      scenarios[letter] = {
+        position: {
+          x: Number(placement.position_x),
+          y: Number(placement.position_y),
+        },
+        rotationDeg: Number(placement.rotation_deg),
+      };
+      selectedSlug ??= placement.house_designs?.[0]?.catalog_slug ?? null;
+    }
+  }
 
   return {
     id: project.id,
@@ -74,11 +110,7 @@ export async function loadProject(id: string): Promise<LoadedProject | null> {
       roadEdge: (plot?.road_edge as RoadEdge) ?? "south",
       northRotationDeg: Number(plot?.north_rotation_deg ?? 0),
     },
-    selectedHouseSlug: placementRow?.house_designs?.catalog_slug ?? null,
-    placement: {
-      x: Number(placementRow?.position_x ?? 0),
-      y: Number(placementRow?.position_y ?? -4),
-      rotationDeg: Number(placementRow?.rotation_deg ?? 0),
-    },
+    selectedHouseSlug: selectedSlug,
+    scenarios,
   };
 }
