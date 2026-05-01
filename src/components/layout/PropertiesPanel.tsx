@@ -17,7 +17,7 @@ export function PropertiesPanel({ className }: { className?: string }) {
     >
       {step === "plot" && <PlotEditor />}
       {step === "house" && <HouseCatalog />}
-      {step === "place" && <Placeholder title="USTAWIENIE" hint="Drag & rotate domu pojawi się w Sprint 3." />}
+      {step === "place" && <PlacementHint />}
       {step === "analyze" && <Placeholder title="ANALIZA" hint="Reguły 3 m / 4 m i strefy zakazane — Sprint 4." />}
       {step === "share" && <Placeholder title="UDOSTĘPNIJ" hint="Publiczny link, komentarze, PDF — Sprint 6." />}
     </aside>
@@ -31,6 +31,36 @@ function Placeholder({ title, hint }: { title: string; hint: string }) {
         {title}
       </div>
       <p className="mt-3 text-sm text-fg-muted">{hint}</p>
+    </>
+  );
+}
+
+function PlacementHint() {
+  return (
+    <>
+      <div className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+        USTAWIENIE
+      </div>
+      <h2 className="mt-1 text-base font-semibold text-fg">Przeciągnij dom</h2>
+      <ul className="mt-4 space-y-3 text-sm text-fg">
+        <li className="flex gap-2">
+          <span className="text-accent">•</span>
+          <span>Chwyć dom kursorem i przesuń go po działce.</span>
+        </li>
+        <li className="flex gap-2">
+          <span className="text-accent">•</span>
+          <span>
+            Użyj przycisków obrotu w dolnym pasku, żeby ustawić bryłę co 15°.
+          </span>
+        </li>
+        <li className="flex gap-2">
+          <span className="text-accent">•</span>
+          <span>Dom nie wyjdzie poza granice działki.</span>
+        </li>
+      </ul>
+      <p className="mt-4 border-t border-border pt-3 text-xs italic text-fg-muted">
+        Snap do 5°, undo, warianty A/B/C — kolejne podejście.
+      </p>
     </>
   );
 }

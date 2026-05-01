@@ -7,11 +7,11 @@ import { useProject } from "@/lib/store/project";
 import { findHouse } from "@/lib/catalog/houses";
 import { Ground } from "./Ground";
 import { Plot } from "./Plot";
-import { House } from "./House";
 import { Road } from "./Road";
 import { Trees } from "./Trees";
 import { NeighborBuildings } from "./NeighborBuildings";
 import { DimensionLabels } from "./DimensionLabels";
+import { PlacementController } from "./PlacementController";
 
 export function SceneCanvas() {
   const { resolvedTheme } = useTheme();
@@ -20,7 +20,8 @@ export function SceneCanvas() {
   const widthM = useProject((s) => s.plot.widthM);
   const depthM = useProject((s) => s.plot.depthM);
   const selectedHouseId = useProject((s) => s.selectedHouseId);
-  const placement = useProject((s) => s.placement);
+  const step = useProject((s) => s.step);
+  const isPlacing = step === "place";
   const house = findHouse(selectedHouseId);
 
   return (
@@ -58,12 +59,10 @@ export function SceneCanvas() {
       <Road plotWidth={widthM} plotDepth={depthM} />
       <Plot width={widthM} depth={depthM} />
       {house && (
-        <House
-          position={[placement.position.x, 0, placement.position.y]}
-          rotation={(placement.rotationDeg * Math.PI) / 180}
-          width={house.widthM}
-          depth={house.depthM}
-          height={house.heightM}
+        <PlacementController
+          house={house}
+          plotWidth={widthM}
+          plotDepth={depthM}
         />
       )}
       <Trees plotWidth={widthM} plotDepth={depthM} />
@@ -72,6 +71,7 @@ export function SceneCanvas() {
 
       <OrbitControls
         enablePan={false}
+        enabled={!isPlacing}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 2.2}
         minDistance={25}
