@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 48 24% 95%;
+    --surface: 0 0% 100%;
+    --surface-2: 48 18% 97%;
+    --border: 42 14% 89%;
+
+    --fg: 240 8% 11%;
+    --fg-muted: 240 5% 44%;
+
+    --accent: 229 71% 49%;
+    --accent-hover: 229 73% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --wood: 32 45% 61%;
+    --wood-dark: 22 38% 35%;
+
+    --status-pass: 102 28% 42%;
+    --status-warning: 41 67% 50%;
+    --status-error: 9 51% 53%;
+  }
+
+  .dark {
+    --bg: 240 9% 11%;
+    --surface: 240 9% 16%;
+    --surface-2: 240 9% 20%;
+    --border: 240 8% 25%;
+
+    --fg: 48 24% 95%;
+    --fg-muted: 240 6% 65%;
+
+    --accent: 226 100% 68%;
+    --accent-hover: 226 90% 60%;
+    --accent-foreground: 240 9% 11%;
+
+    --wood: 32 50% 67%;
+    --wood-dark: 22 42% 45%;
+
+    --status-pass: 105 30% 55%;
+    --status-warning: 43 76% 59%;
+    --status-error: 11 65% 64%;
+  }
+
+  html,
+  body,
+  #__next {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg text-fg antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Tabular numerals for dimensions */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
