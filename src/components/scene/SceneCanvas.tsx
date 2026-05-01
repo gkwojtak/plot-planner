@@ -3,6 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, SoftShadows, Environment } from "@react-three/drei";
 import { useTheme } from "next-themes";
+import { useProject } from "@/lib/store/project";
 import { Ground } from "./Ground";
 import { Plot } from "./Plot";
 import { House } from "./House";
@@ -11,12 +12,12 @@ import { Trees } from "./Trees";
 import { NeighborBuildings } from "./NeighborBuildings";
 import { DimensionLabels } from "./DimensionLabels";
 
-const PLOT_WIDTH = 20; // m
-const PLOT_DEPTH = 35; // m
-
 export function SceneCanvas() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+
+  const widthM = useProject((s) => s.plot.widthM);
+  const depthM = useProject((s) => s.plot.depthM);
 
   return (
     <Canvas
@@ -50,8 +51,8 @@ export function SceneCanvas() {
 
       {/* World */}
       <Ground />
-      <Road plotWidth={PLOT_WIDTH} plotDepth={PLOT_DEPTH} />
-      <Plot width={PLOT_WIDTH} depth={PLOT_DEPTH} />
+      <Road plotWidth={widthM} plotDepth={depthM} />
+      <Plot width={widthM} depth={depthM} />
       <House
         position={[0, 0, -4]}
         rotation={0}
@@ -59,9 +60,9 @@ export function SceneCanvas() {
         depth={12}
         height={7}
       />
-      <Trees plotWidth={PLOT_WIDTH} plotDepth={PLOT_DEPTH} />
-      <NeighborBuildings plotWidth={PLOT_WIDTH} plotDepth={PLOT_DEPTH} />
-      <DimensionLabels width={PLOT_WIDTH} depth={PLOT_DEPTH} />
+      <Trees plotWidth={widthM} plotDepth={depthM} />
+      <NeighborBuildings plotWidth={widthM} plotDepth={depthM} />
+      <DimensionLabels width={widthM} depth={depthM} />
 
       <OrbitControls
         enablePan={false}
