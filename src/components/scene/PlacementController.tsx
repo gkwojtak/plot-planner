@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { useProject } from "@/lib/store/project";
+import { analyzePlacement } from "@/lib/analysis/rules";
 import { House } from "./House";
 import type { HouseDesign } from "@/lib/catalog/houses";
 
@@ -23,8 +24,18 @@ export function PlacementController({ house, plotWidth, plotDepth }: Props) {
   const step = useProject((s) => s.step);
   const placement = useProject((s) => s.placement);
   const setPlacement = useProject((s) => s.setPlacement);
+  const plot = useProject((s) => s.plot);
 
   const isPlacing = step === "place";
+  const showHighlight = isPlacing || step === "analyze";
+
+  const analysis = analyzePlacement(plot, house, placement);
+  const ringColor =
+    analysis.overall === "failed"
+      ? "#C25A4A"
+      : analysis.overall === "warning"
+        ? "#D49A2A"
+        : "#2347D9";
   const dragging = useRef(false);
   const dragOffset = useRef<{ x: number; z: number }>({ x: 0, z: 0 });
 
@@ -107,8 +118,9 @@ export function PlacementController({ house, plotWidth, plotDepth }: Props) {
         />
       </group>
 
-      {/* Highlight ring when in placing mode */}
-      {isPlacing && (
+      {/* Highlight ring when in placing mode or analyse step.
+          Color reflects overall analysis status (passed/warning/failed). */}
+      {showHighlight && (
         <mesh
           position={[placement.position.x, 0.06, placement.position.y]}
           rotation={[-Math.PI / 2, 0, 0]}
@@ -120,7 +132,7 @@ export function PlacementController({ house, plotWidth, plotDepth }: Props) {
               48,
             ]}
           />
-          <meshBasicMaterial color="#2347D9" transparent opacity={0.55} />
+          <meshBasicMaterial color={ringColor} transparent opacity={0.7} />
         </mesh>
       )}
     </group>

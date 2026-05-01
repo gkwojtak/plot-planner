@@ -40,6 +40,7 @@ export function NewProjectReset() {
       currentScenario: "A",
       placement: defaultPlacement,
       step: "plot",
+      snapStep: 15,
     });
   }, []);
 

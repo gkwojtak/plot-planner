@@ -6,9 +6,10 @@ import {
   useProject,
   SCENARIO_LETTERS,
   type ScenarioLetter,
+  type SnapStep,
 } from "@/lib/store/project";
 
-const ROTATE_STEP = 15;
+const SNAP_STEPS: SnapStep[] = [5, 15];
 
 export function BottomBar() {
   const placement = useProject((s) => s.placement);
@@ -16,11 +17,15 @@ export function BottomBar() {
   const step = useProject((s) => s.step);
   const currentScenario = useProject((s) => s.currentScenario);
   const switchScenario = useProject((s) => s.switchScenario);
+  const snapStep = useProject((s) => s.snapStep);
+  const setSnapStep = useProject((s) => s.setSnapStep);
   const isPlacing = step === "place";
 
-  function rotate(deltaDeg: number) {
-    const next = (((placement.rotationDeg + deltaDeg) % 360) + 360) % 360;
-    setPlacement({ rotationDeg: next });
+  function rotate(delta: number) {
+    const next = (((placement.rotationDeg + delta) % 360) + 360) % 360;
+    // Snap to current step for clean rotations regardless of starting angle
+    const snapped = Math.round(next / snapStep) * snapStep;
+    setPlacement({ rotationDeg: snapped % 360 });
   }
 
   return (
@@ -41,8 +46,8 @@ export function BottomBar() {
 
         <ToolButton
           icon={<RotateCcw className="h-4 w-4" />}
-          label={`Obróć -${ROTATE_STEP}°`}
-          onClick={() => rotate(-ROTATE_STEP)}
+          label={`Obróć -${snapStep}°`}
+          onClick={() => rotate(-snapStep)}
           disabled={!isPlacing}
         />
         <span
@@ -55,10 +60,28 @@ export function BottomBar() {
         </span>
         <ToolButton
           icon={<RotateCw className="h-4 w-4" />}
-          label={`Obróć +${ROTATE_STEP}°`}
-          onClick={() => rotate(ROTATE_STEP)}
+          label={`Obróć +${snapStep}°`}
+          onClick={() => rotate(snapStep)}
           disabled={!isPlacing}
         />
+
+        <div className="ml-1 flex items-center rounded-chip border border-border p-0.5">
+          {SNAP_STEPS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setSnapStep(s)}
+              title={`Snap do ${s}°`}
+              className={cn(
+                "rounded-chip px-2 py-0.5 text-[11px] font-medium transition-colors tabular-nums",
+                snapStep === s
+                  ? "bg-accent/15 text-accent"
+                  : "text-fg-muted hover:text-fg",
+              )}
+            >
+              {s}°
+            </button>
+          ))}
+        </div>
 
         <div className="h-6 w-px bg-border" />
 

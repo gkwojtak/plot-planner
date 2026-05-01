@@ -30,6 +30,8 @@ export type ProjectMeta = {
   name: string;
 };
 
+export type SnapStep = 5 | 15;
+
 export type ProjectStore = {
   meta: ProjectMeta;
   plot: PlotState;
@@ -39,6 +41,7 @@ export type ProjectStore = {
   /** Active placement = mirror of scenarios[currentScenario] for fast scene reads. */
   placement: PlacementState;
   step: WorkflowStep;
+  snapStep: SnapStep;
 
   setProjectName: (name: string) => void;
   setPlotDimensions: (width: number, depth: number) => void;
@@ -48,6 +51,7 @@ export type ProjectStore = {
   setPlacement: (placement: Partial<PlacementState>) => void;
   switchScenario: (letter: ScenarioLetter) => void;
   setStep: (step: WorkflowStep) => void;
+  setSnapStep: (s: SnapStep) => void;
 };
 
 const rectanglePoints = (w: number, d: number): Vec2[] => [
@@ -85,6 +89,7 @@ export const useProject = create<ProjectStore>((set) => ({
   currentScenario: "A",
   placement: initialScenarios.A,
   step: "plot",
+  snapStep: 15,
 
   setProjectName: (name) => set((s) => ({ meta: { ...s.meta, name } })),
 
@@ -124,6 +129,8 @@ export const useProject = create<ProjectStore>((set) => ({
     })),
 
   setStep: (step) => set({ step }),
+
+  setSnapStep: (s) => set({ snapStep: s }),
 }));
 
 // Selectors
