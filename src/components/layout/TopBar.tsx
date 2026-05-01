@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Share2, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { SaveButton } from "@/components/layout/SaveButton";
+import { ShareButton } from "@/components/layout/ShareButton";
 import { getCurrentUser } from "@/lib/auth/getUser";
 
 export async function TopBar() {
@@ -23,10 +24,7 @@ export async function TopBar() {
       <div className="flex items-center gap-2">
         <SaveButton isAuthenticated={!!user} />
 
-        <button className="inline-flex h-9 items-center gap-2 rounded-chip bg-accent text-accent-foreground px-3 text-sm font-medium hover:bg-accent-hover transition-colors">
-          <Share2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Udostępnij</span>
-        </button>
+        <ShareButton />
 
         <ThemeToggle />
 

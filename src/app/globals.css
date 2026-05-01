@@ -61,3 +61,36 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+@media print {
+  /* Force light theme for print regardless of dark mode */
+  :root {
+    --bg: 0 0% 100%;
+    --surface: 0 0% 100%;
+    --surface-2: 48 18% 97%;
+    --border: 42 14% 80%;
+    --fg: 240 8% 11%;
+    --fg-muted: 240 5% 35%;
+  }
+  .dark {
+    --bg: 0 0% 100%;
+    --surface: 0 0% 100%;
+    --surface-2: 48 18% 97%;
+    --border: 42 14% 80%;
+    --fg: 240 8% 11%;
+    --fg-muted: 240 5% 35%;
+  }
+
+  body {
+    background: white;
+  }
+
+  .report-page {
+    max-width: 100%;
+  }
+
+  /* Trim browser default header/footer where supported */
+  @page {
+    margin: 1.5cm;
+  }
+}

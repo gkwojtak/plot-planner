@@ -5,6 +5,7 @@ import { useProject } from "@/lib/store/project";
 import { PlotEditor } from "./PlotEditor";
 import { HouseCatalog } from "./HouseCatalog";
 import { AnalysisPanel } from "./AnalysisPanel";
+import { SharePanel } from "./SharePanel";
 
 export function PropertiesPanel({ className }: { className?: string }) {
   const step = useProject((s) => s.step);
@@ -20,7 +21,7 @@ export function PropertiesPanel({ className }: { className?: string }) {
       {step === "house" && <HouseCatalog />}
       {step === "place" && <PlacementHint />}
       {step === "analyze" && <AnalysisPanel />}
-      {step === "share" && <Placeholder title="UDOSTĘPNIJ" hint="Publiczny link, komentarze, PDF — Sprint 6." />}
+      {step === "share" && <SharePanel />}
     </aside>
   );
 }
