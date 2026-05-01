@@ -36,14 +36,21 @@ export function Plot({ width, depth }: { width: number; depth: number }) {
 
   return (
     <group>
-      {/* Grass surface — plot polygon */}
+      {/* Grass surface — plot polygon. Rotation +PI/2 around X maps shape's
+          Y axis directly onto scene Z, so plot.points coords match outline,
+          house placement, and analysis all in one consistent frame.
+          DoubleSide material because the rotation flips the default normal. */}
       <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
         position={[0, 0, 0]}
         receiveShadow
       >
         <shapeGeometry args={[shape]} />
-        <meshStandardMaterial color="#A4B585" roughness={0.95} />
+        <meshStandardMaterial
+          color="#A4B585"
+          roughness={0.95}
+          side={2 /* THREE.DoubleSide */}
+        />
       </mesh>
 
       {/* Plot boundary outline */}

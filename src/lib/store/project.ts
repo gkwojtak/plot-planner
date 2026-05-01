@@ -13,6 +13,25 @@ export const SCENARIO_LETTERS: ScenarioLetter[] = ["A", "B", "C"];
 
 export type LatLon = { lat: number; lon: number };
 
+export type OsmBuilding = {
+  /** Polygon in plot-local meters (x=east, y=north). */
+  points: Vec2[];
+  heightM: number;
+};
+
+export type OsmRoad = {
+  /** Polyline in plot-local meters. */
+  points: Vec2[];
+  /** OSM highway value: residential | tertiary | secondary | service | footway | etc. */
+  kind: string;
+  widthM: number;
+};
+
+export type OsmEnvironment = {
+  buildings: OsmBuilding[];
+  roads: OsmRoad[];
+};
+
 export type PlotState = {
   kind: PlotKind;
   widthM: number;
@@ -23,6 +42,7 @@ export type PlotState = {
   locationWgs84?: LatLon | null;
   uldkId?: string | null;
   polygonWgs84?: LatLon[] | null;
+  osmEnvironment?: OsmEnvironment | null;
 };
 
 export type PlacementState = {
@@ -68,6 +88,7 @@ export type ProjectStore = {
     uldkId: string;
     areaM2: number;
   }) => void;
+  setOsmEnvironment: (env: OsmEnvironment | null) => void;
 };
 
 const rectanglePoints = (w: number, d: number): Vec2[] => [

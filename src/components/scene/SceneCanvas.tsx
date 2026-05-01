@@ -19,6 +19,7 @@ export function SceneCanvas() {
 
   const widthM = useProject((s) => s.plot.widthM);
   const depthM = useProject((s) => s.plot.depthM);
+  const plotKind = useProject((s) => s.plot.kind);
   const selectedHouseId = useProject((s) => s.selectedHouseId);
   const step = useProject((s) => s.step);
   const isPlacing = step === "place";
@@ -56,7 +57,6 @@ export function SceneCanvas() {
 
       {/* World */}
       <Ground />
-      <Road plotWidth={widthM} plotDepth={depthM} />
       <Plot width={widthM} depth={depthM} />
       {house && (
         <PlacementController
@@ -65,9 +65,17 @@ export function SceneCanvas() {
           plotDepth={depthM}
         />
       )}
-      <Trees plotWidth={widthM} plotDepth={depthM} />
-      <NeighborBuildings plotWidth={widthM} plotDepth={depthM} />
-      <DimensionLabels width={widthM} depth={depthM} />
+      {/* Synthetic environment (road/neighbors/labels) only fits rectangular
+          demo plots aligned to the road. Polygon plots — especially imported
+          ones — would be misaligned, so we hide it. */}
+      {plotKind === "rectangle" && (
+        <>
+          <Road plotWidth={widthM} plotDepth={depthM} />
+          <Trees plotWidth={widthM} plotDepth={depthM} />
+          <NeighborBuildings plotWidth={widthM} plotDepth={depthM} />
+          <DimensionLabels width={widthM} depth={depthM} />
+        </>
+      )}
 
       <OrbitControls
         enablePan={false}
