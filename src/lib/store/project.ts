@@ -105,6 +105,7 @@ const initialPlot: PlotState = {
   points: rectanglePoints(20, 35),
   roadEdge: "south",
   northRotationDeg: 0,
+  osmEnvironment: null,
 };
 
 const initialPlacement: PlacementState = {
@@ -236,9 +237,13 @@ export const useProject = create<ProjectStore>((set) => ({
           locationWgs84: payload.locationWgs84,
           polygonWgs84: payload.polygonWgs84,
           uldkId: payload.uldkId,
+          osmEnvironment: null,
         },
       };
     }),
+
+  setOsmEnvironment: (env) =>
+    set((s) => ({ plot: { ...s.plot, osmEnvironment: env } })),
 }));
 
 function pointsBBox(pts: Vec2[]) {

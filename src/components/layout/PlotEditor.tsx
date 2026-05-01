@@ -11,6 +11,7 @@ import {
   type Vec2,
 } from "@/lib/store/project";
 import { importPlotByUldkId } from "@/lib/projects/import-action";
+import { loadOsmEnvironment } from "@/lib/projects/osm-action";
 
 const MapPreview = dynamic(
   () => import("./MapPreview").then((m) => m.MapPreview),
@@ -104,6 +105,13 @@ export function PlotEditor() {
         uldkId: id,
         areaM2: result.areaM2,
       });
+      // Fire-and-forget: load real OSM environment asynchronously.
+      // Scene will pop in when data arrives; graceful if Overpass is unavailable.
+      loadOsmEnvironment(result.locationWgs84.lat, result.locationWgs84.lon).then(
+        (env) => {
+          if (env) useProject.getState().setOsmEnvironment(env);
+        },
+      );
     });
   }
 

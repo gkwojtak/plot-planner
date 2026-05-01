@@ -33,6 +33,7 @@ export function NewProjectReset() {
         locationWgs84: null,
         uldkId: null,
         polygonWgs84: null,
+        osmEnvironment: null,
       },
       selectedHouseId: "system-mala-kostka",
       scenarios: {

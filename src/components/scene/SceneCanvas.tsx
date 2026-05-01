@@ -12,6 +12,7 @@ import { Trees } from "./Trees";
 import { NeighborBuildings } from "./NeighborBuildings";
 import { DimensionLabels } from "./DimensionLabels";
 import { PlacementController } from "./PlacementController";
+import { OsmEnvironment } from "./OsmEnvironment";
 
 export function SceneCanvas() {
   const { resolvedTheme } = useTheme();
@@ -76,6 +77,8 @@ export function SceneCanvas() {
           <DimensionLabels width={widthM} depth={depthM} />
         </>
       )}
+      {/* Real OSM environment — shown for polygon (imported) plots when data is available */}
+      <OsmEnvironment />
 
       <OrbitControls
         enablePan={false}
