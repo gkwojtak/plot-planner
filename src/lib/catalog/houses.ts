@@ -3,6 +3,17 @@
  * Mirrors the seeded rows in `house_designs` (is_system = true).
  * In Sprint 3+ we'll fetch from DB to support user's custom designs.
  */
+
+// "front" faces the road (south by convention before placement rotation).
+// After the house is rotated by rotationDeg the normal rotates with it.
+export type WallSide = "front" | "back" | "left" | "right";
+
+export type WallOpening = {
+  side: WallSide;
+  hasWindow: boolean;
+  hasDoor: boolean;
+};
+
 export type HouseDesign = {
   id: string;
   name: string;
@@ -14,6 +25,8 @@ export type HouseDesign = {
   modelUrl: string | null;
   /** Short description for the catalog card. */
   blurb: string;
+  /** Which walls carry windows or doors — drives both the 3/4 m setback rule and the procedural renderer. */
+  wallOpenings: WallOpening[];
 };
 
 export const HOUSE_CATALOG: HouseDesign[] = [
@@ -28,6 +41,12 @@ export const HOUSE_CATALOG: HouseDesign[] = [
     // License: CC0 (Creative Commons Zero 1.0) — https://kenney.nl/assets/modular-buildings
     modelUrl: "/models/house-cottage.glb",
     blurb: "Parterowy dom kompaktowy, 80 m².",
+    wallOpenings: [
+      { side: "front", hasWindow: true, hasDoor: true },
+      { side: "back",  hasWindow: true, hasDoor: false },
+      { side: "left",  hasWindow: true, hasDoor: false },
+      { side: "right", hasWindow: true, hasDoor: false },
+    ],
   },
   {
     id: "system-stodola-nowoczesna",
@@ -40,6 +59,12 @@ export const HOUSE_CATALOG: HouseDesign[] = [
     // License: CC0 (Creative Commons Zero 1.0) — https://kenney.nl/assets/modular-buildings
     modelUrl: "/models/house-barn.glb",
     blurb: "Wydłużony rzut z dwuspadowym dachem, 140 m².",
+    wallOpenings: [
+      { side: "front", hasWindow: true,  hasDoor: true  },
+      { side: "back",  hasWindow: true,  hasDoor: false },
+      { side: "left",  hasWindow: true,  hasDoor: false },
+      { side: "right", hasWindow: false, hasDoor: false },
+    ],
   },
   {
     id: "system-pietrowy-klasyk",
@@ -50,6 +75,12 @@ export const HOUSE_CATALOG: HouseDesign[] = [
     floors: 2,
     modelUrl: null,
     blurb: "Dwa poziomy, kompaktowa działka, 198 m².",
+    wallOpenings: [
+      { side: "front", hasWindow: true, hasDoor: true  },
+      { side: "back",  hasWindow: true, hasDoor: false },
+      { side: "left",  hasWindow: true, hasDoor: false },
+      { side: "right", hasWindow: true, hasDoor: false },
+    ],
   },
 ];
 

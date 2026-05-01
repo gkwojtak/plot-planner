@@ -23,13 +23,16 @@ type ImportError = {
 export type UldkResult = ImportSuccess | ImportError;
 
 function parseWkt(wkt: string): { x: number; y: number }[] | null {
-  // Handle POLYGON((...)) and MULTIPOLYGON(((...))) — take first ring only
-  const inner = wkt
+  // ULDK responses are EWKT-like: optional "SRID=NNNN;" prefix before geometry.
+  // Strip the SRID prefix first, then handle POLYGON((...)) or MULTIPOLYGON(((...))).
+  const stripped = wkt.replace(/^SRID=\d+;\s*/i, "");
+  const original = stripped;
+  const inner = stripped
     .replace(/^MULTIPOLYGON\s*\(\(\(/i, "")
     .replace(/^POLYGON\s*\(\(/i, "")
     .replace(/\)\).*$/s, "");
 
-  if (!inner || inner === wkt) return null;
+  if (!inner || inner === original) return null;
 
   const pairs = inner.trim().split(",");
   const pts: { x: number; y: number }[] = [];

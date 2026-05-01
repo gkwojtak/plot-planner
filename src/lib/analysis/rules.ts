@@ -3,7 +3,7 @@ import type {
   PlacementState,
   Vec2,
 } from "@/lib/store/project";
-import type { HouseDesign } from "@/lib/catalog/houses";
+import type { HouseDesign, WallSide } from "@/lib/catalog/houses";
 
 export type RuleStatus = "passed" | "warning" | "failed" | "missing_data";
 
@@ -19,12 +19,25 @@ export type AnalysisSummary = {
   overall: RuleStatus;
 };
 
-const SETBACK_MIN_M = 3; // ściana bez okien
-const SETBACK_OPENINGS_M = 4; // ściana z oknami/drzwiami
+const SETBACK_MIN_M = 3;      // ściana bez okien/drzwi
+const SETBACK_OPENINGS_M = 4; // ściana z oknami lub drzwiami
+const WARNING_MARGIN_M = 0.5; // strefa ostrzeżenia powyżej minimum
+
+const WALL_LABELS: Record<WallSide, string> = {
+  front: "Ściana frontowa",
+  back:  "Ściana tylna",
+  left:  "Ściana lewa",
+  right: "Ściana prawa",
+};
 
 /**
  * Compute house's 4 corners in plot-local coords given placement + dimensions.
- * Uses the house's center placement and rotation around Y.
+ * Local frame before rotation:
+ *   front-left  = (-halfW, -halfD)   → index 0
+ *   front-right = ( halfW, -halfD)   → index 1
+ *   back-right  = ( halfW,  halfD)   → index 2
+ *   back-left   = (-halfW,  halfD)   → index 3
+ * "front" faces south (negative Y) before any rotation is applied.
  */
 function houseCorners(
   house: HouseDesign,
@@ -33,10 +46,10 @@ function houseCorners(
   const halfW = house.widthM / 2;
   const halfD = house.depthM / 2;
   const local: Vec2[] = [
-    { x: -halfW, y: -halfD },
-    { x: halfW, y: -halfD },
-    { x: halfW, y: halfD },
-    { x: -halfW, y: halfD },
+    { x: -halfW, y: -halfD }, // 0 front-left
+    { x:  halfW, y: -halfD }, // 1 front-right
+    { x:  halfW, y:  halfD }, // 2 back-right
+    { x: -halfW, y:  halfD }, // 3 back-left
   ];
   const a = (placement.rotationDeg * Math.PI) / 180;
   const cos = Math.cos(a);
@@ -45,6 +58,22 @@ function houseCorners(
     x: placement.position.x + p.x * cos - p.y * sin,
     y: placement.position.y + p.x * sin + p.y * cos,
   }));
+}
+
+/**
+ * Wall segments derived from corners (after rotation):
+ *   front = corners[0] → corners[1]
+ *   right = corners[1] → corners[2]
+ *   back  = corners[2] → corners[3]
+ *   left  = corners[3] → corners[0]
+ */
+function wallSegments(corners: Vec2[]): Record<WallSide, [Vec2, Vec2]> {
+  return {
+    front: [corners[0], corners[1]],
+    right: [corners[1], corners[2]],
+    back:  [corners[2], corners[3]],
+    left:  [corners[3], corners[0]],
+  };
 }
 
 /**
@@ -57,9 +86,7 @@ function pointToSegment(p: Vec2, a: Vec2, b: Vec2): number {
   if (lenSq === 0) return Math.hypot(p.x - a.x, p.y - a.y);
   let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
   t = Math.max(0, Math.min(1, t));
-  const projX = a.x + t * dx;
-  const projY = a.y + t * dy;
-  return Math.hypot(p.x - projX, p.y - projY);
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 }
 
 /**
@@ -89,6 +116,25 @@ function pointToPolygonDistance(p: Vec2, poly: Vec2[]): number {
     const a = poly[i];
     const b = poly[(i + 1) % poly.length];
     min = Math.min(min, pointToSegment(p, a, b));
+  }
+  return min;
+}
+
+/**
+ * Min distance from a wall segment to the plot boundary.
+ * Samples N points along the wall segment and picks the closest distance
+ * to any plot edge. N=10 is sufficient for MVP precision.
+ */
+function wallToPlotDistance(wallA: Vec2, wallB: Vec2, plotPoly: Vec2[]): number {
+  const N = 10;
+  let min = Infinity;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const p: Vec2 = {
+      x: wallA.x + t * (wallB.x - wallA.x),
+      y: wallA.y + t * (wallB.y - wallA.y),
+    };
+    min = Math.min(min, pointToPolygonDistance(p, plotPoly));
   }
   return min;
 }
@@ -135,49 +181,39 @@ export function analyzePlacement(
         },
   );
 
-  // Rule 2: minimalna odległość ściany od granicy (3 m, ściana bez okien)
-  const minDist = Math.min(
-    ...corners.map((c) => pointToPolygonDistance(c, plot.points)),
-  );
+  // Rules 2–5: per-wall setback checks
+  const segments = wallSegments(corners);
+  const sides: WallSide[] = ["front", "back", "left", "right"];
 
-  if (!allInside) {
-    results.push({
-      id: "setback_3m",
-      status: "failed",
-      title: "Odległość od granicy",
-      message: `Najbliższy narożnik wystaje poza działkę (odl. ${formatPL(minDist)} m).`,
-    });
-  } else if (minDist < SETBACK_MIN_M) {
-    results.push({
-      id: "setback_3m",
-      status: "failed",
-      title: "Za blisko granicy",
-      message: `Bryła jest ${formatPL(minDist)} m od granicy. Wymagane minimum 3 m dla ściany bez okien.`,
-    });
-  } else if (minDist < SETBACK_OPENINGS_M) {
-    results.push({
-      id: "setback_3m",
-      status: "warning",
-      title: "Granica setback 3 m OK",
-      message: `Bryła jest ${formatPL(minDist)} m od granicy — ściana z oknami wymaga 4 m.`,
-    });
-  } else {
-    results.push({
-      id: "setback_3m",
-      status: "passed",
-      title: "Bezpieczna odległość od granicy",
-      message: `Najbliższy narożnik ${formatPL(minDist)} m od granicy. Dla ściany z oknami też wystarczy.`,
-    });
+  for (const side of sides) {
+    const opening = house.wallOpenings.find((o) => o.side === side);
+    const hasOpening = opening ? opening.hasWindow || opening.hasDoor : false;
+    const required = hasOpening ? SETBACK_OPENINGS_M : SETBACK_MIN_M;
+    const [segA, segB] = segments[side];
+    const dist = wallToPlotDistance(segA, segB, plot.points);
+    const label = WALL_LABELS[side];
+    const openingDesc = hasOpening ? "z oknami/drzwiami" : "bez okien i drzwi";
+
+    let status: RuleStatus;
+    let title: string;
+    let message: string;
+
+    if (dist < required) {
+      status = "failed";
+      title = `${label} za blisko granicy`;
+      message = `${label} (${openingDesc}) jest ${formatPL(dist)} m od granicy. Wymagane minimum ${required} m. Przesuń dom dalej od granicy.`;
+    } else if (dist < required + WARNING_MARGIN_M) {
+      status = "warning";
+      title = `${label} blisko granicy`;
+      message = `${label} (${openingDesc}) jest ${formatPL(dist)} m od granicy — wymagane ${required} m. Margines jest bardzo mały.`;
+    } else {
+      status = "passed";
+      title = `${label} — odległość w porządku`;
+      message = `${label} (${openingDesc}) jest ${formatPL(dist)} m od granicy. Wymagane minimum ${required} m.`;
+    }
+
+    results.push({ id: `setback_${side}`, status, title, message });
   }
-
-  // Rule 3: brak danych o oknach — informacja
-  results.push({
-    id: "openings_missing",
-    status: "missing_data",
-    title: "Brak danych o oknach",
-    message:
-      "Nie wiemy, które ściany mają okna/drzwi. Walidacja 4 m działa zachowawczo.",
-  });
 
   return {
     results,
