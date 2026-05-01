@@ -2,17 +2,19 @@
 
 import { Map, Home, MoveDiagonal, ShieldCheck, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProject, type WorkflowStep } from "@/lib/store/project";
 
-const steps = [
+const steps: { id: WorkflowStep; label: string; icon: typeof Map }[] = [
   { id: "plot", label: "Działka", icon: Map },
   { id: "house", label: "Dom", icon: Home },
   { id: "place", label: "Ustawienie", icon: MoveDiagonal },
   { id: "analyze", label: "Analiza", icon: ShieldCheck },
   { id: "share", label: "Udostępnij", icon: Share2 },
-] as const;
+];
 
 export function StepsPanel({ className }: { className?: string }) {
-  const activeId = "plot";
+  const activeId = useProject((s) => s.step);
+  const setStep = useProject((s) => s.setStep);
 
   return (
     <aside
@@ -31,6 +33,7 @@ export function StepsPanel({ className }: { className?: string }) {
           return (
             <button
               key={s.id}
+              onClick={() => setStep(s.id)}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 active

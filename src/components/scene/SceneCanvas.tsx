@@ -4,6 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, SoftShadows, Environment } from "@react-three/drei";
 import { useTheme } from "next-themes";
 import { useProject } from "@/lib/store/project";
+import { findHouse } from "@/lib/catalog/houses";
 import { Ground } from "./Ground";
 import { Plot } from "./Plot";
 import { House } from "./House";
@@ -18,6 +19,9 @@ export function SceneCanvas() {
 
   const widthM = useProject((s) => s.plot.widthM);
   const depthM = useProject((s) => s.plot.depthM);
+  const selectedHouseId = useProject((s) => s.selectedHouseId);
+  const placement = useProject((s) => s.placement);
+  const house = findHouse(selectedHouseId);
 
   return (
     <Canvas
@@ -53,13 +57,15 @@ export function SceneCanvas() {
       <Ground />
       <Road plotWidth={widthM} plotDepth={depthM} />
       <Plot width={widthM} depth={depthM} />
-      <House
-        position={[0, 0, -4]}
-        rotation={0}
-        width={10}
-        depth={12}
-        height={7}
-      />
+      {house && (
+        <House
+          position={[placement.position.x, 0, placement.position.y]}
+          rotation={(placement.rotationDeg * Math.PI) / 180}
+          width={house.widthM}
+          depth={house.depthM}
+          height={house.heightM}
+        />
+      )}
       <Trees plotWidth={widthM} plotDepth={depthM} />
       <NeighborBuildings plotWidth={widthM} plotDepth={depthM} />
       <DimensionLabels width={widthM} depth={depthM} />
