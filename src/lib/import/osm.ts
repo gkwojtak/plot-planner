@@ -62,7 +62,13 @@ export async function fetchOsmEnvironment(
   try {
     const res = await fetch(OVERPASS_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        // Overpass returns 406 if it can't classify the client. A real UA also
+        // makes us a good citizen — they ask for it in their usage policy.
+        "User-Agent": "PlotPlanner/0.1 (+https://github.com/gkwojtak/plot-planner)",
+      },
       body: `data=${encodeURIComponent(query)}`,
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),

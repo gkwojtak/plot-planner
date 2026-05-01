@@ -227,6 +227,16 @@ export const useProject = create<ProjectStore>((set) => ({
       const bbox = pointsBBox(payload.points);
       const widthM = Math.max(5, Math.round((bbox.maxX - bbox.minX) * 2) / 2);
       const depthM = Math.max(5, Math.round((bbox.maxY - bbox.minY) * 2) / 2);
+      // Centre house on the polygon centroid so it doesn't end up outside
+      // the imported parcel.
+      const cx =
+        payload.points.reduce((a, p) => a + p.x, 0) / payload.points.length;
+      const cy =
+        payload.points.reduce((a, p) => a + p.y, 0) / payload.points.length;
+      const centeredPlacement: PlacementState = {
+        position: { x: cx, y: cy },
+        rotationDeg: 0,
+      };
       return {
         plot: {
           ...s.plot,
@@ -239,6 +249,13 @@ export const useProject = create<ProjectStore>((set) => ({
           uldkId: payload.uldkId,
           osmEnvironment: null,
         },
+        scenarios: {
+          A: { ...centeredPlacement, position: { ...centeredPlacement.position } },
+          B: { ...centeredPlacement, position: { ...centeredPlacement.position } },
+          C: { ...centeredPlacement, position: { ...centeredPlacement.position } },
+        },
+        placement: centeredPlacement,
+        currentScenario: "A",
       };
     }),
 

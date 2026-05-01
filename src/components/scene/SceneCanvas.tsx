@@ -1,6 +1,7 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, SoftShadows, Environment } from "@react-three/drei";
 import { useTheme } from "next-themes";
 import { useProject } from "@/lib/store/project";
@@ -31,10 +32,18 @@ export function SceneCanvas() {
       shadows
       dpr={[1, 2]}
       gl={{ antialias: true, powerPreference: "high-performance" }}
-      camera={{ position: [42, 36, 48], fov: 30, near: 0.1, far: 500 }}
+      camera={{ position: [42, 36, 48], fov: 30, near: 0.1, far: 800 }}
     >
       <color attach="background" args={[isDark ? "#1A1A1F" : "#F5F4F0"]} />
-      <fog attach="fog" args={[isDark ? "#1A1A1F" : "#F5F4F0", 80, 200]} />
+      {/* Wider fog for polygon plots so OSM buildings 100-150m away stay visible. */}
+      <fog
+        attach="fog"
+        args={
+          plotKind === "polygon"
+            ? [isDark ? "#1A1A1F" : "#F5F4F0", 200, 400]
+            : [isDark ? "#1A1A1F" : "#F5F4F0", 80, 200]
+        }
+      />
 
       <SoftShadows size={20} samples={10} focus={0.6} />
 
@@ -80,15 +89,42 @@ export function SceneCanvas() {
       {/* Real OSM environment — shown for polygon (imported) plots when data is available */}
       <OsmEnvironment />
 
+      {/* Auto-zoom out when polygon mode kicks in so OSM env is in frame */}
+
+      <CameraAutoFrame />
       <OrbitControls
         enablePan={false}
         enabled={!isPlacing}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 2.2}
         minDistance={25}
-        maxDistance={90}
+        maxDistance={plotKind === "polygon" ? 350 : 90}
         target={[0, 0, 0]}
       />
     </Canvas>
   );
+}
+
+/**
+ * Re-frames the camera when plot kind switches to polygon (typically after
+ * import) so the user sees the OSM environment within the new ~150 m radius.
+ * Pulls camera back along its current direction; respects OrbitControls.
+ */
+function CameraAutoFrame() {
+  const { camera } = useThree();
+  const plotKind = useProject((s) => s.plot.kind);
+  const lastKind = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (lastKind.current === plotKind) return;
+    lastKind.current = plotKind;
+
+    const target = plotKind === "polygon" ? 180 : 65;
+    const dir = camera.position.clone().normalize();
+    camera.position.copy(dir.multiplyScalar(target));
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [plotKind, camera]);
+
+  return null;
 }

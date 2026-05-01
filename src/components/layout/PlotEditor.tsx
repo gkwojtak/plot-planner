@@ -107,11 +107,13 @@ export function PlotEditor() {
       });
       // Fire-and-forget: load real OSM environment asynchronously.
       // Scene will pop in when data arrives; graceful if Overpass is unavailable.
-      loadOsmEnvironment(result.locationWgs84.lat, result.locationWgs84.lon).then(
-        (env) => {
+      loadOsmEnvironment(result.locationWgs84.lat, result.locationWgs84.lon)
+        .then((env) => {
           if (env) useProject.getState().setOsmEnvironment(env);
-        },
-      );
+        })
+        .catch(() => {
+          // Environment is optional — fail silently
+        });
     });
   }
 
