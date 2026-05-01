@@ -39,10 +39,15 @@ export function SaveButton({ isAuthenticated }: { isAuthenticated: boolean }) {
     });
 
     if (result.ok) {
-      // Persist new id back to store so subsequent saves update.
+      const wasNew = state.meta.id === null;
       useProject.setState((s) => ({ meta: { ...s.meta, id: result.id } }));
       setStatus({ kind: "saved" });
-      startTransition(() => router.refresh());
+      if (wasNew) {
+        // First save — give the URL the project id so refresh keeps the work.
+        startTransition(() => router.replace(`/projects/${result.id}`));
+      } else {
+        startTransition(() => router.refresh());
+      }
       setTimeout(() => setStatus({ kind: "idle" }), 1800);
     } else {
       setStatus({

@@ -115,28 +115,14 @@ function shoelaceArea(pts: { x: number; y: number }[]): number {
   return Math.abs(a) / 2;
 }
 
-/**
- * Catalog ids in the client (e.g. "system-mala-kostka") don't match the DB UUIDs.
- * Map by name. In Sprint 3 we'll align this by storing the catalog id explicitly
- * or by fetching catalog from DB.
- */
-const CATALOG_ID_TO_DB_NAME: Record<string, string> = {
-  "system-mala-kostka": "Mała kostka",
-  "system-stodola-nowoczesna": "Stodoła nowoczesna",
-  "system-pietrowy-klasyk": "Piętrowy klasyk",
-};
-
 async function resolveHouseDesignId(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  catalogId: string,
+  catalogSlug: string,
 ): Promise<string | null> {
-  const dbName = CATALOG_ID_TO_DB_NAME[catalogId];
-  if (!dbName) return null;
   const { data } = await supabase
     .from("house_designs")
     .select("id")
-    .eq("name", dbName)
-    .eq("is_system", true)
+    .eq("catalog_slug", catalogSlug)
     .maybeSingle();
   return data?.id ?? null;
 }
