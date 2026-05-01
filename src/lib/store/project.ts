@@ -52,6 +52,10 @@ export type ProjectStore = {
   switchScenario: (letter: ScenarioLetter) => void;
   setStep: (step: WorkflowStep) => void;
   setSnapStep: (s: SnapStep) => void;
+  setPlotKind: (kind: PlotKind) => void;
+  movePlotPoint: (index: number, point: Vec2) => void;
+  addPlotPoint: () => void;
+  removePlotPoint: (index: number) => void;
 };
 
 const rectanglePoints = (w: number, d: number): Vec2[] => [
@@ -131,7 +135,73 @@ export const useProject = create<ProjectStore>((set) => ({
   setStep: (step) => set({ step }),
 
   setSnapStep: (s) => set({ snapStep: s }),
+
+  setPlotKind: (kind) =>
+    set((s) => {
+      if (kind === s.plot.kind) return s;
+      // Switching to polygon: keep current 4 corners as editable points.
+      // Switching to rectangle: derive from current points' bounding box.
+      if (kind === "polygon") {
+        return { plot: { ...s.plot, kind } };
+      }
+      const bbox = pointsBBox(s.plot.points);
+      const widthM = Math.max(5, Math.round((bbox.maxX - bbox.minX) * 2) / 2);
+      const depthM = Math.max(5, Math.round((bbox.maxY - bbox.minY) * 2) / 2);
+      return {
+        plot: {
+          ...s.plot,
+          kind,
+          widthM,
+          depthM,
+          points: rectanglePoints(widthM, depthM),
+        },
+      };
+    }),
+
+  movePlotPoint: (index, point) =>
+    set((s) => {
+      if (s.plot.kind !== "polygon") return s;
+      const pts = s.plot.points.slice();
+      pts[index] = point;
+      return { plot: { ...s.plot, points: pts } };
+    }),
+
+  addPlotPoint: () =>
+    set((s) => {
+      if (s.plot.kind !== "polygon") return s;
+      // Insert a midpoint between the last and first points
+      const pts = s.plot.points;
+      const last = pts[pts.length - 1];
+      const first = pts[0];
+      const mid: Vec2 = {
+        x: (last.x + first.x) / 2,
+        y: (last.y + first.y) / 2,
+      };
+      return { plot: { ...s.plot, points: [...pts, mid] } };
+    }),
+
+  removePlotPoint: (index) =>
+    set((s) => {
+      if (s.plot.kind !== "polygon") return s;
+      if (s.plot.points.length <= 3) return s;
+      const pts = s.plot.points.filter((_, i) => i !== index);
+      return { plot: { ...s.plot, points: pts } };
+    }),
 }));
+
+function pointsBBox(pts: Vec2[]) {
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { minX, minY, maxX, maxY };
+}
 
 // Selectors
 export const selectPlotArea = (s: ProjectStore) => {
